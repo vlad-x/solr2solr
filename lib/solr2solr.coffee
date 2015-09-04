@@ -1,19 +1,37 @@
 path = require 'path'
-solr = require 'solr'
+solr = require 'solr-client'
 _ =    require 'underscore'
+querystring =    require 'querystring'
 
 class SolrToSolr
 
   go: (@config) ->
     @sourceClient = solr.createClient(@config.from)
     @destClient   = solr.createClient(@config.to)
+
+    @sourceClient.query = @destClient.query = (query, queryOptions, callback) ->
+      if ('rows' in queryOptions && !queryOptions.rows)
+        delete queryOptions.rows; # ugly fix
+
+      queryOptions.q = query;
+      this.search(querystring.encode(queryOptions), callback);
+
+    if @config.from.user
+      console.log @config.from
+      @sourceClient.basicAuth(@config.from.user, @config.from.password);
+
+    if @config.to.user
+      @destClient.basicAuth(@config.to.user, @config.to.password);
+
     @nextBatch(@config.start)
 
   nextBatch: (start) ->
     console.log "Querying starting at #{start}"
     @sourceClient.query @config.query, {rows:@config.rows, start:start}, (err, response) =>
       return console.log "Some kind of solr query error #{err}" if err?
-      responseObj = JSON.parse response
+      # console.log 'response', response
+      # responseObj = JSON.parse response
+      responseObj = response
 
       newDocs = @prepareDocuments(responseObj.response.docs, start)
       @writeDocuments newDocs, =>
@@ -25,7 +43,7 @@ class SolrToSolr
 
   prepareDocuments: (docs, start) =>
     for doc in docs
-      newDoc = {} 
+      newDoc = {}
       if @config.clone
         for cloneField of doc
           newDoc[cloneField] = doc[cloneField]
@@ -38,6 +56,7 @@ class SolrToSolr
         vals = fab.fabricate(newDoc, start)
         newDoc[fab.name] = vals if vals?
       start++
+      delete newDoc._version_
       newDoc
 
   writeDocuments: (documents, done) ->
