@@ -1,4 +1,4 @@
-solr2solr - a simple Solr migration and test data frabrication tool
+solr2solr - a simple Solr migration and test data fabrication tool
 ============
 
 This tool will query a given Solr index and copy it to another.  Along the way it will give you the opportunity to change field names, drop fields altogether, and fabricate new fields.
