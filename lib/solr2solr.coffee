@@ -27,7 +27,7 @@ class SolrToSolr
 
   nextBatch: (start) ->
     console.log "Querying starting at #{start}"
-    @sourceClient.query @config.query, {rows:@config.rows, start:start}, (err, response) =>
+    @sourceClient.query @config.query, {rows:@config.rows, start:start, sort:@config.sort || 'score desc'}, (err, response) =>
       return console.log "Some kind of solr query error #{err}" if err?
       # console.log 'response', response
       # responseObj = JSON.parse response
