@@ -44,6 +44,8 @@ class SolrToSolr
   prepareDocuments: (docs, start) =>
     for doc in docs
       newDoc = {}
+      if @config.process
+        doc = @config.process doc
       if @config.clone
         for cloneField of doc
           newDoc[cloneField] = doc[cloneField]
