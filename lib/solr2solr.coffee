@@ -6,6 +6,7 @@ querystring =    require 'querystring'
 class SolrToSolr
 
   go: (@config) ->
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     @sourceClient = solr.createClient(@config.from)
     @destClient   = solr.createClient(@config.to)
 
