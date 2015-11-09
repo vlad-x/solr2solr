@@ -33,6 +33,8 @@ class SolrToSolr
 
   nextBatch: (nextBatchData) ->
     queryOptions = {rows:@config.rows, sort:@config.sort || 'score desc'}
+    if @config.fl
+      queryOptions.fl = @config.fl
     if nextBatchData.cursorMark
       console.log "Query using cursorMark #{nextBatchData.cursorMark}"
       queryOptions.cursorMark = nextBatchData.cursorMark
