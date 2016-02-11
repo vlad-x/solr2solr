@@ -6,6 +6,8 @@ querystring =    require 'querystring'
 class SolrToSolr
 
   go: (@config) ->
+    console.log("Copying [#{@config.from.host}] #{@config.from.core} -> [#{@config.to.host}] #{@config.to.core}")
+
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     @sourceClient = solr.createClient(@config.from)
     @destClient   = solr.createClient(@config.to)
@@ -19,7 +21,6 @@ class SolrToSolr
       this.search(querystring.encode(queryOptions), callback);
 
     if @config.from.user
-      console.log @config.from
       @sourceClient.basicAuth(@config.from.user, @config.from.password);
 
     if @config.to.user
@@ -29,6 +30,7 @@ class SolrToSolr
       nextBatchData = {cursorMark: @config.cursorMark}
     else
       nextBatchData = {start: @config.start}
+
     @nextBatch(nextBatchData)
 
   nextBatch: (nextBatchData) ->
