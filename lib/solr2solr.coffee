@@ -56,8 +56,9 @@ class SolrToSolr
         @numProcessed += @config.rows
         console.log "Done #{@numProcessed} rows"
         if nextBatchData.cursorMark
-          if responseObj.nextCursorMark == nextBatchData.cursorMark and @config.commit # cursorMark same as previous means we reached the end
-            @destClient.commit()
+          if responseObj.nextCursorMark == nextBatchData.cursorMark # cursorMark same as previous means we reached the end
+            if @config.commit
+              @destClient.commit()
           else
             nextBatchData.cursorMark = responseObj.nextCursorMark
             @nextBatch(nextBatchData)
