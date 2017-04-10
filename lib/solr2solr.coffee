@@ -56,7 +56,7 @@ class SolrToSolr
         @numProcessed += @config.rows
         console.log "Done #{@numProcessed} rows"
         if nextBatchData.cursorMark
-          if responseObj.nextCursorMark == nextBatchData.cursorMark # cursorMark same as previous means we reached the end
+          if responseObj.nextCursorMark == nextBatchData.cursorMark and @config.commit # cursorMark same as previous means we reached the end
             @destClient.commit()
           else
             nextBatchData.cursorMark = responseObj.nextCursorMark
@@ -65,7 +65,7 @@ class SolrToSolr
           nextBatchData.start += @config.rows
           if responseObj.response.numFound > nextBatchData.start
             @nextBatch(nextBatchData)
-          else
+          else if @config.commit
             @destClient.commit()
 
   prepareDocuments: (docs, start) =>
@@ -100,7 +100,8 @@ class SolrToSolr
 
     @destClient.add _.flatten(docs), (err) =>
       console.log err if err
-      @destClient.commit()
+      if @config.commit 
+        @destClient.commit()
       done()
 
 exports.go = (config) ->
