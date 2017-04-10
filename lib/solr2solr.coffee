@@ -6,8 +6,12 @@ querystring =    require 'querystring'
 class SolrToSolr
 
   go: (@config) ->
+    console.log("Copying [#{@config.from.host}] #{@config.from.core} -> [#{@config.to.host}] #{@config.to.core}")
+
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     @sourceClient = solr.createClient(@config.from)
     @destClient   = solr.createClient(@config.to)
+    @numProcessed = 0
 
     @sourceClient.query = @destClient.query = (query, queryOptions, callback) ->
       if ('rows' in queryOptions && !queryOptions.rows)
@@ -17,33 +21,58 @@ class SolrToSolr
       this.search(querystring.encode(queryOptions), callback);
 
     if @config.from.user
-      console.log @config.from
       @sourceClient.basicAuth(@config.from.user, @config.from.password);
 
     if @config.to.user
       @destClient.basicAuth(@config.to.user, @config.to.password);
 
-    @nextBatch(@config.start)
+    if @config.cursorMark
+      nextBatchData = {cursorMark: @config.cursorMark}
+    else
+      nextBatchData = {start: @config.start}
 
-  nextBatch: (start) ->
-    console.log "Querying starting at #{start}"
-    @sourceClient.query @config.query, {rows:@config.rows, start:start}, (err, response) =>
-      return console.log "Some kind of solr query error #{err}" if err?
+    @nextBatch(nextBatchData)
+
+  nextBatch: (nextBatchData) ->
+    queryOptions = {rows:@config.rows, sort:@config.sort || 'score desc'}
+    if @config.fl
+      queryOptions.fl = @config.fl
+    if nextBatchData.cursorMark
+      console.log "Query using cursorMark #{nextBatchData.cursorMark}"
+      queryOptions.cursorMark = nextBatchData.cursorMark
+      queryOptions.sort = queryOptions.sort + ', id desc' # adding unique field to sort because it's necessary when using cursorMark
+    else
+      console.log "Query starting at #{nextBatchData.start}"
+      queryOptions.start = nextBatchData.start
+
+    @sourceClient.query @config.query, queryOptions, (err, response) =>
+      return console.log "Source Solr query error #{err}" if err?
       # console.log 'response', response
       # responseObj = JSON.parse response
       responseObj = response
 
-      newDocs = @prepareDocuments(responseObj.response.docs, start)
+      newDocs = @prepareDocuments(responseObj.response.docs, nextBatchData.start || 0)
       @writeDocuments newDocs, =>
-        start += @config.rows
-        if responseObj.response.numFound > start
-          @nextBatch(start)
+        @numProcessed += @config.rows
+        console.log "Done #{@numProcessed} rows"
+        if nextBatchData.cursorMark
+          if responseObj.nextCursorMark == nextBatchData.cursorMark # cursorMark same as previous means we reached the end
+            @destClient.commit()
+          else
+            nextBatchData.cursorMark = responseObj.nextCursorMark
+            @nextBatch(nextBatchData)
         else
-          @destClient.commit()
+          nextBatchData.start += @config.rows
+          if responseObj.response.numFound > nextBatchData.start
+            @nextBatch(nextBatchData)
+          else
+            @destClient.commit()
 
   prepareDocuments: (docs, start) =>
     for doc in docs
       newDoc = {}
+      if @config.process
+        doc = @config.process doc
       if @config.clone
         for cloneField of doc
           newDoc[cloneField] = doc[cloneField]

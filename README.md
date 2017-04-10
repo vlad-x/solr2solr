@@ -1,4 +1,25 @@
-solr2solr - a simple Solr migration and test data frabrication tool
+## What is added in this fork
+
+* Sorting, for example `sort:'date asc'`
+* ‘Processing’ of documents, e.g.:
+```coffee
+process: (doc) ->
+    delete doc._version_
+
+    doc #return doc in the end
+```
+* Pagination with Cursors. Just add `cursorMark: '*'` to start or your previous cursor mark to continue
+* Selecting only certain fields: `fl: 'id,name,description'`
+* ‘Insecure’ HTTPS. `process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'` was added somewhere, you don't need to do anything
+* Basic auth added in [vlad-x/solr2solr](https://github.com/vlad-x/solr2solr) from which this repo was forked:
+```coffee
+from:
+    # ...
+    user: 'r00t'
+    password: 'qwerty'
+```
+
+solr2solr - a simple Solr migration and test data fabrication tool
 ============
 
 This tool will query a given Solr index and copy it to another.  Along the way it will give you the opportunity to change field names, drop fields altogether, and fabricate new fields.
