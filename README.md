@@ -11,12 +11,16 @@ process: (doc) ->
 * Pagination with Cursors. Just add `cursorMark: '*'` to start or your previous cursor mark to continue
 * Selecting only certain fields: `fl: 'id,name,description'`
 * ‘Insecure’ HTTPS. `process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'` was added somewhere, you don't need to do anything
-* Basic auth added in [vlad-x/solr2solr](https://github.com/vlad-x/solr2solr) from which this repo was forked:
+* Basic auth 
 ```coffee
 from:
     # ...
     user: 'r00t'
     password: 'qwerty'
+```
+* Force commit
+```
+commit: true
 ```
 
 solr2solr - a simple Solr migration and test data fabrication tool
